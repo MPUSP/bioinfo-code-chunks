@@ -1,0 +1,132 @@
+---
+title: "Hypergeometric test in R"
+author: Michael Jahn
+date: 2022-01-11
+output:
+  html_notebook:
+    theme: cosmo
+    toc: no
+    number_sections: no
+  html_document:
+    toc: no
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Hypergeometric test
+
+### Background
+
+The hypergeometric test is a simple statistical procedure to test for over- or under-representation of items (groups) in a defined global set. For example, if a global set consists of 50 black and 50 white balls, and 20 balls are randomly selected from this set, what is the probability that 17 white balls and only 3 black balls are chosen? The hypergeometric test can answer such questions by using the probability function of the [hypergeometric distribution](https://en.wikipedia.org/wiki/Hypergeometric_distribution). This distribution is highly related to the binomial distribution which uses a similar definition but *with replacement*, instead of *without*.
+
+This document walks through one example where the hypergeometric test is used to determine gene enrichment for pathways of the [subtiwiki pathway categories](http://www.subtiwiki.uni-goettingen.de/v3/category/ for the bacterium *Bacillus subtilis*.
+
+### Libraries and test data
+
+- Install `Category` package from Bioconductor
+
+```{r, eval = FALSE}
+BiocManager::install("Category")
+```
+
+
+- load required libraries
+
+```{r}
+suppressPackageStartupMessages({
+  library(Category)
+  library(tidyverse)
+})
+```
+
+- import category test data (from subtiwiki)
+
+```{r}
+df_subtiwiki <- read_csv("../data/geneCategories-2022-09-02.csv",
+  name_repair = function(x) str_replace_all(x, " ", "_"),
+  show_col_types = FALSE)
+
+head(df_subtiwiki)
+```
+
+- convert dataframe into a nested list format
+
+```{r}
+subti_categories <- df_subtiwiki %>%
+  mutate(category = str_sub(category, 1, 25)) %>%
+  select(category, gene_locus) %>%
+  group_by(category) %>%
+  summarize(gene_locus = list(gene_locus)) %>%
+  deframe()
+
+head(subti_categories, n = 3)
+```
+
+### Prepare input data
+
+- **assayed**: gene sets that were tested in an experiment, usually all genes/pathways in the universe
+- example: we select a subset of 20 subtiwiki categories with each more than 20 genes
+
+```{r}
+assayed <- subti_categories[lapply(subti_categories, length) >= 20][1:20]
+```
+
+- **significant**: genes within the assayed set that were observed, or fall below a sign. threshold
+- example: we select 10% of genes as significant
+
+```{r}
+significant <- lapply(assayed, function(x) sample(x, length(x)/10))
+```
+
+- **universe**: all unique gene names
+
+```{r}
+universe = assayed %>%
+  unlist(use.names = FALSE) %>%
+  unique
+```
+
+### Run test and inspect results
+
+- run hypergeometric test using `hyperg` function from `Categories`
+
+```{r}
+result <- hyperg(
+  assayed,
+  significant,
+  universe,
+  representation = "over"
+)
+
+result <- mutate(result, across(everything(), unlist))
+```
+
+- expected result: all p-values are very similar (no enrichment of a specific pathway)
+
+```{r}
+head(result)
+```
+
+- what happens if one pathway has more than 10% sign. genes?
+
+```{r}
+significant[[1]] <- sample(assayed[[1]], 20)
+```
+
+- run hypergeometric test again and inspect result
+- the first (modified) pathway has lower p-value and higher odds
+
+```{r}
+hyperg(
+    assayed,
+    significant,
+    universe,
+    representation = "over"
+  ) %>% 
+  mutate(across(everything(), unlist)) %>%
+  head
+```
+
