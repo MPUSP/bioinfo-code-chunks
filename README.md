@@ -10,11 +10,13 @@ This repository is a collection of reusable, self-contained code chunks and exam
 
 - `data`: raw data tables or files used for examples
 - `docs`: rendered notebooks in `html` format, for example from R markdown
+- `output`: output files saved for future reference or tests
 - `source`: notebooks and raw script files
 
 ### Contents
 
 - [Hypergeotric test for gene enrichment (R)](https://m-jahn.github.io/bioinfo-code-chunks/hypergeometric-test.nb.html)
+- [Plot sequence logos with python `logomaker`](https://m-jahn.github.io/bioinfo-code-chunks/plot_logos.html)
 
 ### Run examples
 
