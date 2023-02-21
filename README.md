@@ -1,8 +1,11 @@
 bioinfo-code-chunks
 ================================
-Michael Jahn
 
 Random selection of useful code chunks and examples for bioinformatics.
+
+- Author: Michael Jahn, PhD
+- Affiliation: Max Planck Unit for the Science of Pathogens (MPUSP), Berlin, Germany
+- License: GPL-v3
 
 This repository is a collection of reusable, self-contained code chunks and examples. The goal is to provide code examples for recurring tasks, that require mostly existing packages and therefore do not fulfill the requirements to become a new package.
 
@@ -15,8 +18,8 @@ This repository is a collection of reusable, self-contained code chunks and exam
 
 ### Contents
 
-- [Hypergeotric test for gene enrichment (R)](https://m-jahn.github.io/bioinfo-code-chunks/hypergeometric-test.nb.html)
-- [Plot sequence logos with python `logomaker`](https://m-jahn.github.io/bioinfo-code-chunks/plot_logos.html)
+- [Hypergeotric test for gene enrichment (R)](https://MPUSP.github.io/bioinfo-code-chunks/hypergeometric-test.nb.html)
+- [Plot sequence logos with python `logomaker`](https://MPUSP.github.io/bioinfo-code-chunks/plot_logos.html)
 
 ### Run examples
 
