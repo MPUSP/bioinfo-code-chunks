@@ -18,6 +18,7 @@ This repository is a collection of reusable, self-contained code chunks and exam
 
 ### Contents
 
+- [Fast gene set enrichment (R)](https://MPUSP.github.io/bioinfo-code-chunks/fast_gene_set_enrichment.nb.html)
 - [Hypergeotric test for gene enrichment (R)](https://MPUSP.github.io/bioinfo-code-chunks/hypergeometric-test.nb.html)
 - [Plot sequence logos with python `logomaker`](https://MPUSP.github.io/bioinfo-code-chunks/plot_logos.html)
 

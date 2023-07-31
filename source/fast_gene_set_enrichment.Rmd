@@ -1,0 +1,167 @@
+---
+title: "Fast gene set enrichment with R"
+author: Michael Jahn
+date: 2023-07-31
+output:
+  html_notebook:
+    theme: cosmo
+    toc: no
+    number_sections: no
+  html_document:
+    toc: no
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Fast gene set enrichment
+
+### Background
+
+In contrast to a simple gene set enrichment with the hypergeometric test, fast gene set enrichment (**`fgsea`**) does not only test for over- or under-representation of items (groups) in a defined global set, but also takes a quantitative score (expression strength, fold change, etc) into account.
+
+This document walks through one example where the the Bioconductor package `fgsea` is used to determine gene enrichment for pathways of the [subtiwiki pathway categories](http://www.subtiwiki.uni-goettingen.de/v3/category/ for the bacterium *Bacillus subtilis*.
+
+### Libraries and test data
+
+- Install `fgsea` package from Bioconductor
+
+```{r, eval = FALSE}
+BiocManager::install("fgsea")
+```
+
+
+- load required libraries
+
+```{r}
+suppressPackageStartupMessages({
+  library(fgsea)
+  library(tidyverse)
+})
+```
+
+- import category test data (from subtiwiki)
+
+```{r}
+df_subtiwiki <- read_csv("../data/geneCategories-2022-09-02.csv",
+  name_repair = function(x) str_replace_all(x, " ", "_"),
+  show_col_types = FALSE)
+
+head(df_subtiwiki)
+```
+
+- `fgsea` requires a gene expression matrix and gene-pathway annotation as input
+- can calculate arbitrarily small p-values using iterative random sampling
+- bring input into right format
+
+```{r}
+df_pathway <- df_subtiwiki %>%
+  select(-gene_name, -category_id) %>%
+  distinct() %>%
+  rename(locus_tag = gene_locus) %>%
+  mutate(locus_tag = gsub("_", "", locus_tag))
+
+df_expression <- df_pathway %>%
+  select(locus_tag) %>%
+  distinct() %>%
+  mutate(condition = "test", log2FC = rnorm(n(), 0, sd = 3))
+
+list_fgsea_pathways <- df_pathway %>%
+    group_by(category) %>%
+    summarize(locus_tag = list(locus_tag)) %>%
+    deframe
+
+head(list_fgsea_pathways, n = 3)
+```
+
+### Generalized function to run `fgsea` 
+
+- we can make a generalized function that can run `fgsea` on arbitrary data
+- can run on many categories at once
+- takes as input:
+  - `gene_table`: data frame with columns `condition`, `log2FC`, `locus_tag`
+  - `conditions`: optional vector of conditions where tests are run independently; requires a matching column in `gene_table` named `condition`
+  - `pathways`: named list of pathways containing vectors of `locus_tag`s
+  - `collapse`: logical that defines whether similar pathways should be collapsed
+  
+
+```{r}
+fgsea_multiple <- function(
+    conditions, gene_table, pathways,
+    minSize = 5, maxSize = 200, collapse = TRUE) {
+  result <- lapply(conditions,
+    function(cond){
+      genes <- gene_table %>%
+        filter(condition == cond, !is.na(log2FC), !is.na(locus_tag)) %>%
+        select(locus_tag, log2FC) %>%
+        deframe
+      df_fgsea <- fgsea(
+        pathways, genes,
+        minSize = minSize, maxSize = maxSize
+      )
+      if (collapse) {
+          main_pws <- collapsePathways(
+          df_fgsea,
+          pathways,
+          genes
+        )$mainPathways
+        df_fgsea <- filter(df_fgsea, pathway %in% main_pws)
+      }
+      return(df_fgsea)
+  })
+  names(result) <- conditions
+  return(bind_rows(result, .id = "condition"))
+}
+```
+
+
+### Run test and inspect results
+
+- set a seed to obtain same result every time
+
+```{r}
+set.seed(123)
+
+fgsea_result <- fgsea_multiple(
+  conditions = "test",
+  gene_table = df_expression,
+  pathways = list_fgsea_pathways
+)
+```
+
+- expected result: adjusted p-values should not be significant (no enrichment of a specific pathway)
+
+```{r}
+fgsea_result %>%
+  arrange(padj) %>%
+  head(n = 5)
+```
+
+- what happens if one pathway has higher log2 FC?
+- it suddenly becomes highly significant
+
+```{r}
+df_expression <- df_expression %>%
+  mutate(log2FC = case_when(
+    locus_tag %in% list_fgsea_pathways[["Biosynthesis of peptidoglycan"]] ~ rnorm(n()) - 6,
+    .default = log2FC
+  ))
+```
+
+
+```{r}
+set.seed(123)
+
+fgsea_result <- fgsea_multiple(
+  conditions = "test",
+  gene_table = df_expression,
+  pathways = list_fgsea_pathways
+)
+
+fgsea_result %>%
+  arrange(padj) %>%
+  head(n = 5)
+```
+
