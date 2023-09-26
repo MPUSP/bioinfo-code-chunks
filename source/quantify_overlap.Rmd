@@ -1,0 +1,106 @@
+---
+title: "Quantifiying overlap in the composition of categories"
+author: Michael Jahn
+date: 2022-01-11
+output:
+  html_notebook:
+    theme: cosmo
+    toc: no
+    number_sections: no
+  html_document:
+    toc: no
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Background
+
+Often in biology we encounter situations where one gene maps to different pathways, or different pathways to the same gene.
+I other words, gene-pathway relationships are member-category relationships that can have a large degree of redundancy or overlap. Some pathways/categories might be highly similar when comparing the list of their members. It is often useful to know the degree of overlap between pathways/categories, and optionally reduce the list of pathways to leave only one representative instead of multiple highly similar ones.
+
+This document walks through one example where we determine overlap between pathways of the [subtiwiki pathway categories](http://www.subtiwiki.uni-goettingen.de/v3/category/ for the bacterium *Bacillus subtilis*.
+
+If you find a built-in function in an R package that will do this automatically, please [leave a message](https://github.com/MPUSP/bioinfo-code-chunks/issues).
+
+### Libraries and test data
+
+- load required libraries
+
+```{r}
+suppressPackageStartupMessages({
+  library(tidyverse)
+})
+```
+
+- import category test data (from subtiwiki)
+
+```{r}
+df_subtiwiki <- read_csv("../data/geneCategories-2022-09-02.csv",
+  name_repair = function(x) str_replace_all(x, " ", "_"),
+  show_col_types = FALSE)
+
+head(df_subtiwiki)
+```
+
+### Calculate overlap
+
+- in order to estimate overlap, the data is transformed into a 2-dimensional matrix with pathways on rows, genes on columns
+- the matrix is a binary matrix filled with membership relations (1 - member, 0 - no member)
+
+```{r}
+mat_categories <- df_subtiwiki %>%
+  mutate(category = str_sub(category, 1, 25)) %>%
+  select(category, gene_locus) %>%
+  distinct() %>% 
+  mutate(dummy = 1) %>%
+  pivot_wider(id_cols = category, names_from = gene_locus,
+    values_from = dummy, values_fill = 0) %>%
+  column_to_rownames("category") %>%
+  as.matrix
+
+mat_categories[1:5, 1:5]
+```
+
+- reduce result to 50 first categories
+- the binary matrix  is clustered by similarity and plotted as dendrogram
+
+```{r}
+hclust_cat <- dist(mat_categories[1:50, ], method = "binary") %>%
+  hclust(method = "complete")
+
+plot(hclust_cat, cex = 0.6, main = NA)
+```
+
+
+- the binary distance metric shows that, for example, two pathways with distance 0.5 have 50% of their member genes in common
+- we can find these by "cutting" the dendrogram at height = 0.5
+
+```{r}
+cutree(hclust_cat, h = 0.5) %>%
+  {duplicated(.) | rev(duplicated(rev(.)))} %>%
+  which %>% hclust_cat$labels[.]
+```
+
+- we can also calculate the distance metric directly and find similar pathways by filtering
+- note: the heatmap shows only every second label due to size restrictions
+
+```{r, fig.width = 5.5, fig.height = 5.5}
+dist(mat_categories[1:50, ], method = "binary") %>%
+  as.matrix %>%
+  heatmap
+```
+- filter categories (rows) where dist metric falls below a threshold of 0.5
+- same result as dendrogram
+
+```{r}
+dist(mat_categories[1:50, ], method = "binary") %>%
+  as.matrix %>%
+  as.data.frame %>%
+  mutate(across(everything(), ~ replace(.x, .x == 0, NA))) %>%
+  filter(if_any(everything(), ~ .x < 0.5))
+```
+
+
