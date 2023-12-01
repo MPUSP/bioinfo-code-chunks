@@ -14,7 +14,8 @@ This repository is a collection of reusable, self-contained code chunks and exam
 - `data`: raw data tables or files used for examples
 - `docs`: rendered notebooks in `html` format, for example from R markdown
 - `output`: output files saved for future reference or tests
-- `source`: notebooks and raw script files
+- `pipeline`: R markdown or jupyter notebooks with examples
+- `source`: script files
 
 ### Contents
 
@@ -22,13 +23,14 @@ This repository is a collection of reusable, self-contained code chunks and exam
 - [Hypergeotric test for gene enrichment (R)](https://MPUSP.github.io/bioinfo-code-chunks/hypergeometric-test.nb.html)
 - [Quantify overlap between pathways (R)](https://MPUSP.github.io/bioinfo-code-chunks/quantify_overlap.nb.html)
 - [Plot sequence logos with python `logomaker`](https://MPUSP.github.io/bioinfo-code-chunks/plot_logos.html)
+- [Plot coverage tracks](https://MPUSP.github.io/bioinfo-code-chunks/plot_coverage.html)
 
 ### Run examples
 
 The pipelines collected in this repository are self-contained and executable. For R markdown and jupyter notebooks, the code _and_ the documentation are part of one and the same document. If you want to run the examples yourself, there are two possibilities:
 
-1. copy and paste code chunks from the documents in `source/`
-2. clone/download the repository, open and re-run notebooks in `source/` (see below)
+1. copy and paste code chunks from the documents in `source/` or `pipeline/`
+2. clone/download the repository, open and re-run notebooks in `pipeline/` (see below)
 
 To download the repository on your local drive use `git clone` in a (linux) terminal:
 

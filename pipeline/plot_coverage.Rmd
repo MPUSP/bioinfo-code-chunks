@@ -1,0 +1,189 @@
+---
+title: "Plot coverage tracks for genomic data"
+author: Michael Jahn
+date: 2023-12-01
+output:
+  html_notebook:
+    theme: cosmo
+    toc: no
+    number_sections: no
+  html_document:
+    toc: no
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Background
+
+The functions and code chunks collected here fullfill a very simple purpose: 
+to plot read coverage or related information, as well as gene annotation as
+coverate tracks on one canvas. This is often very useful for sequencing data that
+is created from large throughput pipelines, and where it is not practical to
+import and plot coverage etc in a genome browser such as IGV.
+
+### Libraries and test data
+
+- `ggcoverage` can be installed with latest version from github
+
+```{r, eval = FALSE}
+devtools::install_github("showteeth/ggcoverage")
+```
+
+- load required libraries
+
+```{r}
+suppressPackageStartupMessages({
+  library(tidyverse)
+  library(GenomicFeatures)
+  library(GenomicRanges)
+  library(ggcoverage)
+  library(cowplot)
+})
+```
+
+- import test data
+- first the `*.gff` file with gene annotation
+- has to be parsed by `GenomicFeatures` or `ORFik` packages to txdb
+- then CDS, transcripts etc. can be extracted as `GRanges` object
+
+
+```{r}
+# file path
+genome_gff <- "../data/spyogenes_genome.gff"
+
+# import genome annotation
+txdb <- makeTxDbFromGFF(genome_gff, format = "gff3")
+
+# extract all CDSs as GRanges object
+list_cds <- transcripts(txdb)
+head(list_cds)
+```
+
+- next import example `*.bam` files with read data
+- one RNASeq data file, first 5000 nt of genome
+- one RiboSeq data file, first 5000 nt of genome
+
+```{r}
+rnaseq <- rtracklayer::import(con = "../data/spyogenes_rnaseq.bam", format = "bam")
+riboseq <- rtracklayer::import(con = "../data/spyogenes_riboseq.bam", format = "bam")
+
+head(rnaseq)
+```
+
+### Plot tracks
+
+#### Import utility functions
+
+- import plotting functions
+  - `get_coverage` calculates coverage per nt (similar to bedgraph files) from `GAlignments` or `Granges`
+  - `track_coverage_combined` plots one figure with different tracks overlaid
+  - `track_coverage_separate` plots one figure with different tracks stacked on each other
+  - `track_genomic_features` plots genome features from a `Granges` or `GrangesList`
+
+
+```{r}
+source("../source/coverage_utils.R")
+```
+
+
+#### Get coverage
+
+- we specify a name for the track with `Type`
+- coverage is calculated per strand, here named `Group`
+
+```{r}
+df_coverage <- bind_rows(
+  get_coverage(rnaseq, Type = "RNA"),
+  get_coverage(riboseq, Type = "RIBO")
+)
+
+# turn Type into factor for same order of tracks
+df_coverage <- mutate(df_coverage, Type = factor(Type, unique(Type)))
+
+# print
+head(df_coverage)
+```
+
+#### Plot tracks
+
+- plot individual coverage tracks
+- first all tracks together
+
+```{r, fig.width = 7.5, fig.height = 3.5}
+track1 <- track_coverage_combined(
+  df = df_coverage,
+  start_coord = 0,
+  end_coord = 5000,
+  track_color = c("#B3B3B3", "#C9C9C9", "#7570B3", "#9C97DA")
+)
+
+track1
+```
+
+- then all tracks separated by `Type` and `Group`
+
+```{r, fig.width = 7.5, fig.height = 3.5}
+track2 <- track_coverage_separate(
+  df = df_coverage,
+  start_coord = 0,
+  end_coord = 5000,
+  track_color = c("#B3B3B3", "#C9C9C9", "#7570B3", "#9C97DA")
+)
+
+track2
+```
+
+- All tracks can be customized by changing the `theme` options
+
+```{r, fig.width = 7.5, fig.height = 3.5}
+track3 <- track_coverage_separate(
+  df = df_coverage,
+  start_coord = 0,
+  end_coord = 5000,
+  track_color = c("#B3B3B3", "#C9C9C9", "#7570B3", "#9C97DA")
+) +
+  theme_bw() +
+  theme(
+    panel.spacing.y = unit(-0.2, "pt"),
+    axis.text.y = element_blank()
+  )
+
+track3
+```
+
+#### Plot genome features
+
+- use a prettier theme right from the start
+
+```{r, fig.width = 7.5, fig.height = 1.2}
+track4 <- track_genomic_features(
+  data = as_tibble(list_cds),
+  name_id = "tx_name",
+  track_name = "GENES",
+  start_coord = 0,
+  end_coord = 5000,
+  track_color = grey(0.4)
+) +
+  theme_bw() +
+  theme(
+    legend.position = 0,
+    axis.text.y = element_blank()
+  )
+
+track4
+```
+
+#### Combine different tracks in one figure
+
+- can use `ggpubr::ggarrange` or `cowplot::plot_grid` to arrange multiple plots
+```{r}
+cowplot::plot_grid(
+  track3 + theme(plot.margin = unit(c(12, 12, 0, 12), "point")),
+  track4 + theme(plot.margin = unit(c(0, 12, 12, 12), "point")),
+  nrow = 2, rel_heights = c(0.7, 0.3), align = "v"
+)
+```
+
