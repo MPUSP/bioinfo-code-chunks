@@ -1,5 +1,4 @@
-bioinfo-code-chunks
-================================
+# bioinfo-code-chunks
 
 Random selection of useful code chunks and examples for bioinformatics.
 
@@ -23,7 +22,7 @@ This repository is a collection of reusable, self-contained code chunks and exam
 - [Hypergeotric test for gene enrichment (R)](https://MPUSP.github.io/bioinfo-code-chunks/hypergeometric-test.nb.html)
 - [Quantify overlap between pathways (R)](https://MPUSP.github.io/bioinfo-code-chunks/quantify_overlap.nb.html)
 - [Plot sequence logos with python `logomaker`](https://MPUSP.github.io/bioinfo-code-chunks/plot_logos.html)
-- [Plot coverage tracks](https://MPUSP.github.io/bioinfo-code-chunks/plot_coverage.html)
+- [Plot coverage tracks](https://MPUSP.github.io/bioinfo-code-chunks/plot_coverage.nb.html)
 
 ### Run examples
 
@@ -34,14 +33,14 @@ The pipelines collected in this repository are self-contained and executable. Fo
 
 To download the repository on your local drive use `git clone` in a (linux) terminal:
 
-``` bash
+```bash
 cd /your-target-folder
 git clone https://github.com/m-jahn/bioinfo-code-chunks.git
 ```
 
 Open a pipeline with your favorite IDE (Rstudio, jupyterlab, ...) and execute code (chunks) with the `Run` button. For R markdown notebooks, you can also open an interactive R session and render the document like this:
 
-``` bash
+```bash
 require(rmarkdown)
 rmarkdown::render("document.Rmd")
 ```
