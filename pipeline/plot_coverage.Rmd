@@ -16,7 +16,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Background
+## Background
 
 The functions and code chunks collected here fullfill a very simple purpose: 
 to plot read coverage or related information, as well as gene annotation as
@@ -24,7 +24,9 @@ coverate tracks on one canvas. This is often very useful for sequencing data tha
 is created from large throughput pipelines, and where it is not practical to
 import and plot coverage etc in a genome browser such as IGV.
 
-### Libraries and test data
+## Libraries and test data
+
+### Packages
 
 - `ggcoverage` can be installed with latest version from github
 
@@ -44,7 +46,21 @@ suppressPackageStartupMessages({
 })
 ```
 
-- import test data
+### Import utility functions
+
+- `get_coverage` calculates coverage per nt (similar to bedgraph files) from `GAlignments` or `Granges`
+- `track_coverage_combined` plots one figure with different tracks overlaid
+- `track_coverage_separate` plots one figure with different tracks stacked on each other
+- `track_genomic_features` plots genome features from a `Granges` or `GrangesList`
+- `check_gff` checks `*.gff` files for problematic tags and replaces those
+
+
+```{r}
+source("../source/coverage_utils.R")
+```
+
+### Import test data
+
 - first the `*.gff` file with gene annotation
 - has to be parsed by `GenomicFeatures` or `ORFik` packages to txdb
 - then CDS, transcripts etc. can be extracted as `GRanges` object
@@ -53,6 +69,9 @@ suppressPackageStartupMessages({
 ```{r}
 # file path
 genome_gff <- "../data/spyogenes_genome.gff"
+
+# check gff file
+check_gff(genome_gff, "Name=[a-zA-Z0-9\\s\\-\\_]*,", "Name=[a-zA-Z0-9\\s\\-\\_]*")
 
 # import genome annotation
 txdb <- makeTxDbFromGFF(genome_gff, format = "gff3")
@@ -73,23 +92,9 @@ riboseq <- rtracklayer::import(con = "../data/spyogenes_riboseq.bam", format = "
 head(rnaseq)
 ```
 
-### Plot tracks
+## Plot tracks
 
-#### Import utility functions
-
-- import plotting functions
-  - `get_coverage` calculates coverage per nt (similar to bedgraph files) from `GAlignments` or `Granges`
-  - `track_coverage_combined` plots one figure with different tracks overlaid
-  - `track_coverage_separate` plots one figure with different tracks stacked on each other
-  - `track_genomic_features` plots genome features from a `Granges` or `GrangesList`
-
-
-```{r}
-source("../source/coverage_utils.R")
-```
-
-
-#### Get coverage
+### Get coverage
 
 - we specify a name for the track with `Type`
 - coverage is calculated per strand, here named `Group`
@@ -107,7 +112,7 @@ df_coverage <- mutate(df_coverage, Type = factor(Type, unique(Type)))
 head(df_coverage)
 ```
 
-#### Plot tracks
+### Plot tracks
 
 - plot individual coverage tracks
 - first all tracks together
@@ -154,7 +159,7 @@ track3 <- track_coverage_separate(
 track3
 ```
 
-#### Plot genome features
+### Plot genome features
 
 - use a prettier theme right from the start
 
@@ -176,7 +181,7 @@ track4 <- track_genomic_features(
 track4
 ```
 
-#### Combine different tracks in one figure
+### Combine different tracks in one figure
 
 - can use `ggpubr::ggarrange` or `cowplot::plot_grid` to arrange multiple plots
 ```{r}

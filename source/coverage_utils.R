@@ -107,3 +107,23 @@ track_genomic_features <- function(
   }
   return(plt)
 }
+
+# function to find and replace offending values in GFF file
+check_gff <- function(gff_file, pattern, replacement, suffix = "_cleaned") {
+  gff <- read_lines(gff_file)
+  dupl_names <- which(str_detect(gff, pattern))
+  if (any(dupl_names)){
+    message(paste0("Found invalid attributes in ", length(dupl_names), " cases:"))
+    gff[dupl_names] <- unname(sapply(dupl_names, function(x){
+      match <- str_match(gff[x], pattern)
+      repl <- str_match(gff[x], replacement)
+      message(str_glue("  Line: {x}, match: '{match}', replacement: '{repl}'"))
+      str_replace(gff[x], pattern = pattern, replacement = repl)
+    }))
+    new_file <- str_replace(gff_file, "\\.gff$", paste0(suffix, ".gff"))
+    message(paste0("exported cleaned GFF file to: ", new_file))
+    write_lines(gff, file = new_file)
+  } else {
+    message("found no errors, no new GFF file exported")
+  }
+}
