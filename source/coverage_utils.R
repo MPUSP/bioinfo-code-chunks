@@ -1,35 +1,76 @@
 # function to get coverage of arbitrary tracks;
 # input can be any Granges or Galignment object that supports method "coverage"
-get_coverage <- function(data, Type = "RNAseq", by_strand = TRUE) {
-  df_coverage <- list(
-    `+` = as.data.frame(coverage(data[strand(data) == "+"])),
-    `-` = as.data.frame(coverage(data[strand(data) == "-"]) * -1)
-  ) %>%
-    dplyr::bind_rows(.id = "Group") %>%
-    dplyr::as_tibble() %>%
-    dplyr::mutate(seqnames = factor(group_name), Type = Type) %>%
-    dplyr::rename(score = value) %>%
-    dplyr::select(-group, -group_name) %>%
-    dplyr::group_by(Group) %>%
-    dplyr::mutate(start = 0:(n() - 1), end = seq_len(n())) %>%
-    dplyr::select(seqnames, start, end, score, Type, Group) %>%
-    dplyr::mutate(Type = paste0(Type, " [", Group, "]")) %>%
-    dplyr::ungroup() %>%
-    as.data.frame()
+get_coverage <- function(
+    data, format = "bam", sample = "RNAseq",
+    by_strand = TRUE, binning = FALSE, bin_width = 100, bin_fun = mean) {
+  if (!by_strand) {
+    message("Coverage by strand turned off, setting all ranges to '+'")
+    strand(data) == "+"
+  }
+  if (all(strand(data) == "*")) {
+    message("Input data is not strand-specific, setting all ranges to '+'")
+    strand(data) == "+"
+  }
+  if (any(strand(data) == "*")) {
+    message("Some ranges have undefined strand information, setting those to '+'")
+    strand(data[strand(data) == "*"]) <- "+"
+  }
+  if (format == "bam") {
+    df_coverage <- list(
+      `+` = as.data.frame(coverage(data[strand(data) == "+"])),
+      `-` = as.data.frame(coverage(data[strand(data) == "-"]) * -1)
+    ) %>%
+      dplyr::bind_rows(.id = "strand") %>%
+      dplyr::as_tibble() %>%
+      dplyr::mutate(seqnames = factor(group_name), sample = sample) %>%
+      dplyr::rename(score = value) %>%
+      dplyr::select(-group, -group_name) %>%
+      dplyr::group_by(strand) %>%
+      dplyr::mutate(start = 0:(n() - 1), end = seq_len(n())) %>%
+      dplyr::mutate(sample_strand = paste0(sample, " [", strand, "]")) %>%
+      dplyr::select(seqnames, start, end, score, sample, strand, sample_strand) %>%
+      dplyr::ungroup() %>%
+      as.data.frame()
+  } else if (format == "BigWig") {
+    df_coverage <- as.data.frame(data) %>%
+      dplyr::as_tibble() %>%
+      dplyr::mutate(
+        start = start - 1,
+        score = ifelse(strand == "-", sqrt(score^2) * -1, score),
+        sample = sample,
+        sample_strand = paste0(sample, " [", strand, "]")
+      ) %>%
+      dplyr::select(seqnames, start, end, score, sample, strand, sample_strand) %>%
+      as.data.frame()
+  } else {
+    stop(paste0("the specified file format '", format, "' is unknown"))
+  }
+  # reduce complexity by calculating mean of 100 bp windows
+  if (binning) {
+    df_coverage <- df_coverage %>%
+      mutate(
+        bin = cut_width(start, width = bin_width, center = bin_width / 2, labels = FALSE) * bin_width
+      ) %>%
+      group_by(seqnames, sample, strand, sample_strand, bin) %>%
+      summarize(score = mean(score, na.rm = TRUE), .groups = "drop") %>%
+      mutate(start = bin - (min(bin) - 1), end = bin) %>%
+      as.data.frame()
+  }
   return(df_coverage)
 }
 
 # function to plot a combined coverage track
 track_coverage_combined <- function(
     df, start_coord = 0, end_coord = max(df$end),
-    track_color = 1:6
-) {
+    track_color = 1:6) {
   df %>%
     filter(start >= start_coord, end <= end_coord) %>%
     ggplot() +
     geom_area(position = "identity", aes(
-      x = start, y = score,
-      color = Type, fill = Type
+      x = start,
+      y = score,
+      color = sample_strand,
+      fill = sample_strand
     )) +
     labs(x = "", y = "") +
     theme(legend.position = c(0.9, 0.8), legend.key.size = unit(0.3, "cm")) +
@@ -40,14 +81,13 @@ track_coverage_combined <- function(
 # function to plot separate coverage tracks using ggcoverage
 track_coverage_separate <- function(
     df, start_coord = 0, end_coord = max(df$end),
-    track_color = 1:6
-) {
+    track_color = 1:6) {
   ggplot() +
     geom_coverage(
       data = filter(df, start >= start_coord, end <= end_coord),
       plot.type = "facet",
-      group.key = "Type",
-      facet.key = "Type",
+      group.key = "sample_strand",
+      facet.key = "sample_strand",
       facet.color = track_color,
       color = track_color
     ) +
@@ -63,10 +103,9 @@ track_coverage_separate <- function(
 track_genomic_features <- function(
     data, name_id, start_coord, end_coord, feature = NULL,
     arrow_width = 2.0, arrow_head = 1.0, arrow_type = "open",
-    track_color = grey(0.4), track_name = NULL
-) {
+    track_color = grey(0.4), track_name = NULL) {
   if (is.null(feature)) {
-    data$feature = "other"
+    data$feature <- "other"
   }
   plt <- data %>%
     filter(end >= start_coord, start <= end_coord) %>%
@@ -102,7 +141,7 @@ track_genomic_features <- function(
 
   if (!is.null(track_name)) {
     plt <- plt +
-      facet_wrap( ~ track, strip.position = "right") +
+      facet_wrap(~track, strip.position = "right") +
       theme(strip.background = element_rect(fill = grey(0.8), color = grey(0.3), ))
   }
   return(plt)
@@ -112,9 +151,9 @@ track_genomic_features <- function(
 check_gff <- function(gff_file, pattern, replacement, suffix = "_cleaned") {
   gff <- read_lines(gff_file)
   dupl_names <- which(str_detect(gff, pattern))
-  if (any(dupl_names)){
+  if (any(dupl_names)) {
     message(paste0("Found invalid attributes in ", length(dupl_names), " cases:"))
-    gff[dupl_names] <- unname(sapply(dupl_names, function(x){
+    gff[dupl_names] <- unname(sapply(dupl_names, function(x) {
       match <- str_match(gff[x], pattern)
       repl <- str_match(gff[x], replacement)
       message(str_glue("  Line: {x}, match: '{match}', replacement: '{repl}'"))

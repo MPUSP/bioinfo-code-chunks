@@ -59,9 +59,9 @@ suppressPackageStartupMessages({
 source("../source/coverage_utils.R")
 ```
 
-### Import test data
+### Import genome annotation
 
-- first the `*.gff` file with gene annotation
+- first import the `*.gff` file with gene annotation
 - has to be parsed by `GenomicFeatures` or `ORFik` packages to txdb
 - then CDS, transcripts etc. can be extracted as `GRanges` object
 
@@ -81,6 +81,8 @@ list_cds <- transcripts(txdb)
 head(list_cds)
 ```
 
+### Import *.bam files
+
 - next import example `*.bam` files with read data
 - one RNASeq data file, first 5000 nt of genome
 - one RiboSeq data file, first 5000 nt of genome
@@ -92,25 +94,61 @@ riboseq <- rtracklayer::import(con = "../data/spyogenes_riboseq.bam", format = "
 head(rnaseq)
 ```
 
-## Plot tracks
+### Get coverage for *.bam files
 
-### Get coverage
-
-- we specify a name for the track with `Type`
-- coverage is calculated per strand, here named `Group`
+- specify the appropriate data source with `format` (one of "bam", "BigWig")
+- specify a name for the track with `sample`
+- coverage is calculated per `strand`
+- a new variable `sample_strand` combines the two
 
 ```{r}
 df_coverage <- bind_rows(
-  get_coverage(rnaseq, Type = "RNA"),
-  get_coverage(riboseq, Type = "RIBO")
+  get_coverage(rnaseq, format = "bam", sample = "RNA"),
+  get_coverage(riboseq, format = "bam", sample = "RIBO")
 )
 
-# turn Type into factor for same order of tracks
-df_coverage <- mutate(df_coverage, Type = factor(Type, unique(Type)))
+# turn sample names into factor for same order of tracks
+df_coverage <- df_coverage %>%
+  mutate(sample_strand = factor(sample_strand, unique(sample_strand)))
 
 # print
 head(df_coverage)
 ```
+
+### Import *.bigwig files
+
+- import `*.bigwig`/`*.bw` as an alternative to bam
+- bigwig files are strand-specific binary (compressed) coverage files
+- therefore need two files per sample, and specify strand when importing
+- similar to `*.bedgraph` files
+
+```{r}
+rnaseq_bw_for <- rtracklayer::import(con = "../data/spyogenes_rnaseq_forward.bw", format = "BigWig")
+rnaseq_bw_rev <- rtracklayer::import(con = "../data/spyogenes_rnaseq_reverse.bw", format = "BigWig")
+
+strand(rnaseq_bw_for) <- "+"
+strand(rnaseq_bw_rev) <- "-"
+
+head(rnaseq_bw_for)
+```
+
+### Get coverage for  *.bigwig files
+
+```{r}
+df_coverage_bw <- bind_rows(
+  get_coverage(rnaseq_bw_for, format = "BigWig", sample = "RNA"),
+  get_coverage(rnaseq_bw_rev, format = "BigWig", sample = "RNA"),
+)
+
+# turn sample names into factor for same order of tracks
+df_coverage_bw <- df_coverage_bw %>%
+  mutate(sample_strand = factor(sample_strand, unique(sample_strand)))
+
+# print
+head(df_coverage_bw)
+```
+
+## Plot tracks
 
 ### Plot tracks
 
@@ -128,7 +166,7 @@ track1 <- track_coverage_combined(
 track1
 ```
 
-- then all tracks separated by `Type` and `Group`
+- then all tracks separated by `sample` and `strand`
 
 ```{r, fig.width = 7.5, fig.height = 3.5}
 track2 <- track_coverage_separate(
@@ -141,7 +179,7 @@ track2 <- track_coverage_separate(
 track2
 ```
 
-- All tracks can be customized by changing the `theme` options
+- all tracks can be customized by changing the `theme` options
 
 ```{r, fig.width = 7.5, fig.height = 3.5}
 track3 <- track_coverage_separate(
@@ -159,8 +197,31 @@ track3 <- track_coverage_separate(
 track3
 ```
 
+- test if coverage plots for Bam and BigWig files are identical
+- they are (left: Bam, right: BigWig)
+
+```{r, fig.width = 7.5, fig.height = 3.5}
+cowplot::plot_grid(
+  track_coverage_separate(
+    df = filter(df_coverage, sample == "RNA"),
+    start_coord = 0,
+    end_coord = 5000,
+    track_color = c("#B3B3B3", "#C9C9C9")
+  ) + theme_bw(),
+  track_coverage_separate(
+    df = filter(df_coverage_bw, sample == "RNA"),
+    start_coord = 0,
+    end_coord = 5000,
+    track_color = c("#B3B3B3", "#C9C9C9")
+  ) + theme_bw(),
+  ncol = 2, align = "h"
+)
+```
+
+
 ### Plot genome features
 
+- plot genomic features such as CDSs or transcripts
 - use a prettier theme right from the start
 
 ```{r, fig.width = 7.5, fig.height = 1.2}
@@ -184,6 +245,7 @@ track4
 ### Combine different tracks in one figure
 
 - can use `ggpubr::ggarrange` or `cowplot::plot_grid` to arrange multiple plots
+
 ```{r}
 cowplot::plot_grid(
   track3 + theme(plot.margin = unit(c(12, 12, 0, 12), "point")),
@@ -192,3 +254,35 @@ cowplot::plot_grid(
 )
 ```
 
+
+### Plot coverage with size reduction
+
+- sometimes coverage of large genonomic ranges can be too dense
+- file size gets large and plotting becomes slow
+- in this case `get_coverage` can be used with `binnin = TRUE`
+- data will be binned in `bin_width`-wide windows, and coverage calculated by function `bin_fun`
+- default is to use 100 nt windows and `mean()` for averaging
+
+```{r, fig.width = 7.5, fig.height = 3.5}
+df_coverage_binned <- get_coverage(rnaseq, format = "bam", sample = "RNA", binning = TRUE)
+
+# turn sample names into factor for same order of tracks
+df_coverage_binned <- df_coverage_binned %>%
+  mutate(sample_strand = factor(sample_strand, unique(sample_strand)))
+
+cowplot::plot_grid(
+  track_coverage_separate(
+    df = filter(df_coverage, sample == "RNA"),
+    start_coord = 0,
+    end_coord = 5000,
+    track_color = c("#B3B3B3", "#C9C9C9")
+  ) + theme_bw(),
+  track_coverage_separate(
+    df = filter(df_coverage_binned, sample == "RNA"),
+    start_coord = 0,
+    end_coord = 5000,
+    track_color = c("#B3B3B3", "#C9C9C9")
+  ) + theme_bw(),
+  ncol = 2, align = "h"
+)
+```
