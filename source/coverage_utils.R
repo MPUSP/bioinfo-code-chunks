@@ -72,6 +72,7 @@ track_coverage_combined <- function(
       color = sample_strand,
       fill = sample_strand
     )) +
+    lims(x = c(start_coord, end_coord)) +
     labs(x = "", y = "") +
     theme(legend.position = c(0.9, 0.8), legend.key.size = unit(0.3, "cm")) +
     scale_color_manual(values = alpha(track_color, 0.6)) +
@@ -81,7 +82,7 @@ track_coverage_combined <- function(
 # function to plot separate coverage tracks using ggcoverage
 track_coverage_separate <- function(
     df, start_coord = 0, end_coord = max(df$end),
-    track_color = 1:6) {
+    track_color = 1:6, facet.y.scale = "free", ...) {
   ggplot() +
     geom_coverage(
       data = filter(df, start >= start_coord, end <= end_coord),
@@ -89,8 +90,10 @@ track_coverage_separate <- function(
       group.key = "sample_strand",
       facet.key = "sample_strand",
       facet.color = track_color,
-      color = track_color
+      color = track_color,
+      facet.y.scale = facet.y.scale
     ) +
+    lims(x = c(start_coord, end_coord)) +
     labs(x = "", y = "") +
     theme(
       panel.spacing.y = unit(-0.2, "pt"),
@@ -127,7 +130,7 @@ track_genomic_features <- function(
       linewidth = arrow_width, lineend = "butt", linejoin = "mitre",
       arrow = arrow(angle = 30, length = unit(arrow_head, "points"), type = arrow_type)
     ) +
-    geom_text(aes(
+    ggrepel::geom_text_repel(aes(
       x = (xstart + xend) / 2, y = y,
       label = get(name_id), color = feature
     ), size = 2.5, nudge_y = 0.25) +
