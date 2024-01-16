@@ -41,6 +41,7 @@ suppressPackageStartupMessages({
   library(tidyverse)
   library(GenomicFeatures)
   library(GenomicRanges)
+  library(GenomicAlignments)
   library(ggcoverage)
   library(ggrepel)
   library(cowplot)
@@ -89,10 +90,18 @@ head(list_cds)
 - one RiboSeq data file, first 5000 nt of genome
 
 ```{r}
-rnaseq <- rtracklayer::import(con = "../data/spyogenes_rnaseq.bam", format = "bam")
-riboseq <- rtracklayer::import(con = "../data/spyogenes_riboseq.bam", format = "bam")
+rnaseq <- readGAlignments("../data/spyogenes_rnaseq.bam")
+riboseq <- readGAlignments("../data/spyogenes_riboseq.bam")
 
 head(rnaseq)
+```
+
+- if read data is **paired-end** instead of single-end, use `readGAlignmentsPairs`
+- note: does not work with this example data
+
+```{r, eval = FALSE}
+rnaseq <- readGAlignmentPairs("../data/spyogenes_rnaseq.bam")
+riboseq <- readGAlignmentPairs("../data/spyogenes_riboseq.bam")
 ```
 
 ### Get coverage for *.bam files
