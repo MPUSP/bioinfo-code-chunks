@@ -112,6 +112,7 @@ track_genomic_features <- function(
   }
   plt <- data %>%
     filter(end >= start_coord, start <= end_coord) %>%
+    add_row() %>%
     mutate(
       track = track_name,
       xstart = case_when(
