@@ -22,8 +22,8 @@ This repository is a collection of reusable, self-contained code chunks and exam
 - [Hypergeotric test for gene enrichment (R)](https://MPUSP.github.io/bioinfo-code-chunks/hypergeometric-test.nb.html)
 - [Quantify overlap between pathways (R)](https://MPUSP.github.io/bioinfo-code-chunks/quantify_overlap.nb.html)
 - [Retrieve KEGG pathway information (R)](https://MPUSP.github.io/bioinfo-code-chunks/get_kegg_pathways.nb.html)
-- [Plot sequence logos with python `logomaker`](https://MPUSP.github.io/bioinfo-code-chunks/plot_logos.html)
-- [Plot coverage tracks](https://MPUSP.github.io/bioinfo-code-chunks/plot_coverage.nb.html)
+- [Plot sequence logos with `logomaker` (python)](https://MPUSP.github.io/bioinfo-code-chunks/plot_logos.html)
+- [Plot coverage tracks (R)](https://MPUSP.github.io/bioinfo-code-chunks/plot_coverage.nb.html)
 
 ### Run examples
 
@@ -39,9 +39,18 @@ cd /your-target-folder
 git clone https://github.com/m-jahn/bioinfo-code-chunks.git
 ```
 
-Open a pipeline with your favorite IDE (Rstudio, jupyterlab, ...) and execute code (chunks) with the `Run` button. For R markdown notebooks, you can also open an interactive R session and render the document like this:
+Open a pipeline with your favorite IDE ([Rstudio](https://posit.co/download/rstudio-desktop/), [jupyterlab](https://jupyter.org/), ...) and execute code (chunks) with the `Run` button. For R markdown notebooks, you can also open an interactive R session and render the document like this:
 
 ```bash
 require(rmarkdown)
 rmarkdown::render("document.Rmd")
+```
+
+### Import on the fly
+
+It's possible to directly import functions from a github repo into running code.
+For R code, simply `source` a function from github like this:
+
+```
+source("https://raw.githubusercontent.com/MPUSP/bioinfo-code-chunks/main/source/get_kegg_pathways.R")
 ```
