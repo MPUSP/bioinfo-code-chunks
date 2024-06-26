@@ -1,0 +1,121 @@
+---
+title: "Retrieve KEGG Brite pathway information"
+author: Michael Jahn
+date: 2024-06-26
+output:
+  html_notebook:
+    theme: cosmo
+    toc: no
+    number_sections: no
+  html_document:
+    toc: no
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## KEGG (Brite) pathways
+
+### Background
+
+- Uniprot does not have good pathway annotation
+- GO terms (obtained from Uniprot) are sometimes difficult to work with as they are too specific or unspecific
+- GO terms have the (dis-) advantage of labelling a gene with many different functional classes
+- what we often like to have instead is a simple overview about gene-pathway relationship
+- simple means here that one gene is associated with only one or few descriptive functions
+- KEGG (Brite) is a manually curated (not homology based) database that offers such information
+- this example uses the Bioconductor package `KEGGRest` to retrieve pathways for the bacterium *Bacillus subtilis*.
+
+### Libraries and test data
+
+- Install `KEGGREST` package from Bioconductor
+
+```{r, eval = FALSE}
+BiocManager::install("KEGGREST")
+```
+
+
+- load required libraries
+
+```{r}
+suppressPackageStartupMessages({
+  library(KEGGREST)
+  library(tidyverse)
+})
+```
+
+
+### Retrieve pathways
+
+#### Starting with organism ID
+
+- KEGG uses organism IDs, for *Bacillus subtilis* it is `bsu`
+- using this ID, we can retrieve gene-pathway relationships using a premade R function
+- internally it uses the `keggLink` function to find pathways and `keggList` to retrieve human readable pathway names
+- it also trims some unnecessary text
+- it can be used with organism ID (example: `bsu`) or gene ID (example: `bsu:BSU00040`)
+
+```{r}
+source("../source/get_kegg_pathways.R")
+```
+
+- apply function to retrieve pathways by organism
+
+```{r}
+df_kegg <- get_kegg_pathways(id = "bsu")
+head(df_kegg)
+```
+
+#### Starting with gene ID
+
+- we can supply one or more IDs but they need to have the organism tag in the front
+
+```{r}
+df_kegg_genes <- get_kegg_pathways(id = c("bsu:BSU00040", "bsu:BSU20340"))
+head(df_kegg_genes)
+```
+
+### Results
+
+- overview about most abundant pathways by locus_tag
+- only top 10 pathways are shown
+
+```{r}
+df_summary <- df_kegg %>%
+  group_by(kegg_pathway) %>%
+  summarize(count = n()) %>%
+  arrange(desc(count)) %>%
+  slice(1:10)
+
+head(df_summary)
+```
+
+```{r, fig.width = 6.5, fig.height = 3.5}
+df_summary %>%
+  slice(10:1) %>%
+  ggplot(aes(x = count, y = fct_inorder(kegg_pathway))) +
+  geom_col()
+```
+
+- how many genes are associated with multiple pathways?
+- this anaylsis is the inverse of the previous one
+- 524 genes are associated with only 1 pathway, 241 with 2, and so on
+
+```{r}
+df_summary <- df_kegg %>%
+  group_by(locus_tag) %>%
+  summarize(genes_per_pathway = n()) %>%
+  count(genes_per_pathway)
+
+df_summary
+```
+
+```{r, fig.width = 6.5, fig.height = 3.5}
+df_summary %>%
+  ggplot(aes(x = genes_per_pathway, y = n)) +
+  geom_line() +
+  geom_point()
+```
+
