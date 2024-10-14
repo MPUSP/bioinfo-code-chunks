@@ -245,7 +245,7 @@ track4 <- track_genomic_features(
 ) +
   theme_bw() +
   theme(
-    legend.position = 0,
+    legend.position = "none",
     axis.text.y = element_blank()
   )
 

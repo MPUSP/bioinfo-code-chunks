@@ -74,7 +74,7 @@ track_coverage_combined <- function(
     )) +
     lims(x = c(start_coord, end_coord)) +
     labs(x = "", y = "") +
-    theme(legend.position = c(0.9, 0.8), legend.key.size = unit(0.3, "cm")) +
+    theme(legend.position.inside = c(0.9, 0.8), legend.key.size = unit(0.3, "cm")) +
     scale_color_manual(values = alpha(track_color, 0.6)) +
     scale_fill_manual(values = alpha(track_color, 0.4))
 }
@@ -144,7 +144,7 @@ track_genomic_features <- function(
     ) +
     labs(x = "", y = "") +
     scale_color_manual(values = track_color) +
-    theme(legend.position = 0)
+    theme(legend.position = "none")
 
   if (!is.null(track_name)) {
     plt <- plt +
