@@ -120,13 +120,42 @@ significant[[1]] <- sample(assayed[[1]], 20)
 - the first (modified) pathway has lower p-value and higher odds
 
 ```{r}
-hyperg(
+result2 <- hyperg(
     assayed,
     significant,
     universe,
     representation = "over"
   ) %>% 
-  mutate(across(everything(), unlist)) %>%
-  head
+  mutate(across(everything(), unlist))
+
+head(result2)
 ```
 
+### P-value adjustment
+
+- p-values from testing hundreds to thousands of pathways can be highly inflated
+- the chance of discovering false positive correlations increases with the number of carried out tests
+- to correct for multiple hypothesis testing, p-value adjustment is often advisable
+- simply speaking, p-value adjustment works by correcting the observed p-value distribution depending on the number of tests that were carried out
+- various methods are available, differing in their conservativeness
+- a good option to start with is usually the Benjamini-Hochberg method, implemented in R with `stats::p.adjust(p, method = "BH")`
+- the example below shows how p-values increase (become less "significant") after adjustment
+
+```{r}
+result2 <- mutate(result2, p_adj = p.adjust(p, method = "BH"))
+
+result2 %>%
+  ggplot(aes(x = p, y = p_adj)) +
+  geom_abline(slope = 1, intercept = 0, linetype = 2, color = grey(0.5)) +
+  geom_point() +
+  theme_light() +
+  theme(aspect.ratio = 1.0)
+```
+
+### Interpretation
+
+The output table from the gene enrichment function can be interpreted as follows:
+
+- `p`: column with *un-adjusted* p-values
+- `odds`: intermediate statistic from hypergeometric test -- if we picture an urn containing genes from the universe, genes annotated at a given category are white (`W`) and the rest black (`B`), then odds ratio is `(W_drawn * (B - B_drawn)) / (B_drawn * (W - W_drawn))`
+- `expected`: the number of expected genes from the assayed group
