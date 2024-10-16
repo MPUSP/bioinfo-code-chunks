@@ -1,7 +1,7 @@
 ---
 title: "Quantifiying overlap in the composition of categories"
 author: Michael Jahn
-date: 2022-01-11
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   html_notebook:
     theme: cosmo

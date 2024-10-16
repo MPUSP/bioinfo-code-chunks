@@ -1,7 +1,7 @@
 ---
 title: "Fast gene set enrichment with R"
 author: Michael Jahn
-date: 2023-07-31
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   html_notebook:
     theme: cosmo
