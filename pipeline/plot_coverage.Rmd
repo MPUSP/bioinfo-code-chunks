@@ -236,7 +236,8 @@ cowplot::plot_grid(
 
 ```{r, fig.width = 7.5, fig.height = 1.2}
 track4 <- track_genomic_features(
-  data = as_tibble(list_cds),
+  data = as_tibble(list_cds) %>%
+    filter(seqnames == unique(df_coverage$seqnames)), ,
   name_id = "tx_name",
   track_name = "GENES",
   start_coord = 0,
