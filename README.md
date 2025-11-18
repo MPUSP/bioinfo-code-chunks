@@ -24,6 +24,7 @@ This repository is a collection of reusable, self-contained code chunks and exam
 - [Retrieve KEGG pathway information (R)](https://MPUSP.github.io/bioinfo-code-chunks/get_kegg_pathways.nb.html)
 - [Plot sequence logos with `logomaker` (python)](https://MPUSP.github.io/bioinfo-code-chunks/plot_logos.html)
 - [Plot coverage tracks (R)](https://MPUSP.github.io/bioinfo-code-chunks/plot_coverage.nb.html)
+- [Plot Circos genomes with `pycircos` (python)](https://MPUSP.github.io/bioinfo-code-chunks/plot_circos.html)
 
 ### Run examples
 
