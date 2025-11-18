@@ -13,15 +13,17 @@ from collections import defaultdict
 
 
 def parse_fasta(fasta_file):
-    """parse FASTA file and return sequence lengths."""
+    """Parse FASTA file and return sequence records."""
     sequences = {}
     for record in SeqIO.parse(fasta_file, "fasta"):
         sequences[record.id] = record
     return sequences
 
 
-def parse_gff(gff_file, feature_types=["CDS", "gene", "rRNA", "tRNA"]):
+def parse_gff(gff_file, feature_types=None):
     """parse GFF file and extract features by type."""
+    if feature_types is None:
+        feature_types = ["CDS", "gene", "rRNA", "tRNA"]
     features = defaultdict(list)
     with open(gff_file, "r") as f:
         for line in f:
@@ -44,7 +46,7 @@ def parse_gff(gff_file, feature_types=["CDS", "gene", "rRNA", "tRNA"]):
 
 
 def create_circos_plot(fasta_file, gff_file, output_file="circos_plot.png"):
-    """create 'Circos' plot with genome and annotations."""
+    """Create Circos plot with genome and annotations."""
 
     # parse input files
     print(f"parsing FASTA: {fasta_file}")
@@ -54,9 +56,9 @@ def create_circos_plot(fasta_file, gff_file, output_file="circos_plot.png"):
     features = parse_gff(gff_file)
 
     # check that all seq_ids from annotation are present in seq
-    seq_ids_fasta = [i for i in sequences.keys() if isinstance(i, str)]
-    seq_ids_gff = [i for i in features.keys() if isinstance(i, str)]
-    if not all([i in seq_ids_fasta for i in seq_ids_gff]):
+    seq_ids_fasta = list(sequences.keys())
+    seq_ids_gff = list(features.keys())
+    if not all(i in seq_ids_fasta for i in seq_ids_gff):
         raise ValueError("Some sequence IDs in GFF not found in FASTA.")
 
     # initialize Circos
@@ -120,8 +122,8 @@ def create_circos_plot(fasta_file, gff_file, output_file="circos_plot.png"):
     # calculate GC content and GC skew
     print("calculating GC content and GC skew...")
     window = 1000
-    for idx, (seqid, record) in enumerate(sequences.items()):
-        if record.id not in arc_data:
+    for seqid, record in sequences.items():
+        if seqid not in arc_data:
             continue
         gc_values = []
 
