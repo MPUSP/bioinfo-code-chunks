@@ -147,6 +147,12 @@ def create_circos_plot(fasta_file, gff_file, output_file="circos_plot.png"):
                 gc_values.append([i + window // 2, i + window, gc])
 
         if gc_values:
+            min_skew = min(gc_skew_minus)
+            max_skew = max(gc_skew_plus) 
+            if min_skew == max_skew == 0:
+                skew_rlim = (-0.1, 0.1)
+            else:
+                skew_rlim = (min_skew, max_skew)
             circle.lineplot(
                 record.id,
                 data=[i[2] for i in gc_values],
@@ -162,7 +168,7 @@ def create_circos_plot(fasta_file, gff_file, output_file="circos_plot.png"):
                 positions=gc_skew_positions,
                 raxis_range=(600, 700),
                 base_value=0,
-                rlim=(min(gc_skew_minus), max(gc_skew_plus)),
+                rlim=skew_rlim,
                 facecolor="#984ea3",
             )
             circle.fillplot(
@@ -171,7 +177,7 @@ def create_circos_plot(fasta_file, gff_file, output_file="circos_plot.png"):
                 positions=gc_skew_positions,
                 raxis_range=(600, 700),
                 base_value=0,
-                rlim=(min(gc_skew_minus), max(gc_skew_plus)),
+                rlim=skew_rlim,
                 facecolor="#642f6c",
             )
 
