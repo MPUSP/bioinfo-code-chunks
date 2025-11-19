@@ -13,7 +13,7 @@ from collections import defaultdict
 
 
 def parse_fasta(fasta_file):
-    """Parse FASTA file and return sequence records."""
+    """parse FASTA file and return sequence records."""
     sequences = {}
     for record in SeqIO.parse(fasta_file, "fasta"):
         sequences[record.id] = record
@@ -45,8 +45,26 @@ def parse_gff(gff_file, feature_types=None):
     return features
 
 
-def create_circos_plot(fasta_file, gff_file, output_file="circos_plot.png"):
-    """Create Circos plot with genome and annotations."""
+def parse_tsv(tsv_file):
+    """parse TSV file and infer type of data."""
+    tsv_data = defaultdict(lambda: defaultdict(list))
+    with open(tsv_file, "r") as f:
+        headers = f.readline().strip().split("\t")
+        for line in f:
+            parts = line.split("\t")
+            seqid = parts[0]
+            for i in range(2, len(headers)):
+                num = parts[i].strip()
+                if num:
+                    entry = {"position": parts[1], "value": float(num)}
+                    tsv_data[seqid][headers[i]].append(entry)
+    return tsv_data
+
+
+def create_circos_plot(
+    fasta_file, gff_file, output_file="circos_plot.png", tsv_file=None
+):
+    """create Circos plot with genome and annotations."""
 
     # parse input files
     print(f"parsing FASTA: {fasta_file}")
@@ -55,17 +73,33 @@ def create_circos_plot(fasta_file, gff_file, output_file="circos_plot.png"):
     print(f"parsing GFF: {gff_file}")
     features = parse_gff(gff_file)
 
+    if tsv_file:
+        print(f"parsing TSV: {tsv_file}")
+        tsv_data = parse_tsv(tsv_file)
+    else:
+        tsv_data = None
+
     # check that all seq_ids from annotation are present in seq
     seq_ids_fasta = list(sequences.keys())
     seq_ids_gff = list(features.keys())
     if not all(i in seq_ids_fasta for i in seq_ids_gff):
-        raise ValueError("Some sequence IDs in GFF not found in FASTA.")
+        raise ValueError("some sequence IDs in GFF not found in FASTA.")
 
     # initialize Circos
     circle = pycircos.Gcircle(figsize=(10, 10))
 
     # add arcs for each sequence/chromosome
-    colors = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00"]
+    colors = [
+        "#ffb55a",
+        "#b2e061",
+        "#bd7ebe",
+        "#7eb0d5",
+        "#fd7f6f",
+        "#ffee65",
+        "#beb9db",
+        "#fdcce5",
+        "#8bd3c7",
+    ]
     arc_data = {}
 
     for idx, (seqid, record) in enumerate(sequences.items()):
@@ -99,10 +133,10 @@ def create_circos_plot(fasta_file, gff_file, output_file="circos_plot.png"):
 
     # add features from GFF
     feature_colors = {
-        "CDS": "#377eb8",
-        "gene": "#4daf4a",
-        "rRNA": "#e41a1c",
-        "tRNA": "#ff7f00",
+        "CDS": "#279683",
+        "gene": "#974d74",
+        "rRNA": "#4a417c",
+        "tRNA": "#7e75af",
     }
 
     for seqid in features:
@@ -150,7 +184,7 @@ def create_circos_plot(fasta_file, gff_file, output_file="circos_plot.png"):
 
         if gc_values:
             min_skew = min(gc_skew_minus)
-            max_skew = max(gc_skew_plus) 
+            max_skew = max(gc_skew_plus)
             if min_skew == max_skew == 0:
                 skew_rlim = (-0.1, 0.1)
             else:
@@ -160,7 +194,7 @@ def create_circos_plot(fasta_file, gff_file, output_file="circos_plot.png"):
                 data=[i[2] for i in gc_values],
                 positions=[i[0] for i in gc_values],
                 raxis_range=(700, 800),
-                rlim=(0.3, 0.7),
+                rlim=(0.25, 0.75),
                 linecolor="#984ea3",
                 linewidth=1,
             )
@@ -171,7 +205,7 @@ def create_circos_plot(fasta_file, gff_file, output_file="circos_plot.png"):
                 raxis_range=(600, 700),
                 base_value=0,
                 rlim=skew_rlim,
-                facecolor="#984ea3",
+                facecolor="#642f6c",
             )
             circle.fillplot(
                 record.id,
@@ -180,8 +214,39 @@ def create_circos_plot(fasta_file, gff_file, output_file="circos_plot.png"):
                 raxis_range=(600, 700),
                 base_value=0,
                 rlim=skew_rlim,
-                facecolor="#642f6c",
+                facecolor="#ae6fb8",
             )
+
+    # add custom features supplied from TSV
+    for seqid in sequences.keys():
+        if tsv_data is None or seqid not in tsv_data.keys():
+            continue
+        for idx, (plot_type, plot_data) in enumerate(tsv_data[seqid].items()):
+
+            # get the method by name
+            plot_method = getattr(circle, plot_type)
+            positions = [int(entry["position"]) for entry in plot_data]
+            values = [entry["value"] for entry in plot_data]
+
+            # base parameters (same for all plot_types)
+            base_params = {
+                "data": values,
+                "positions": positions,
+                "raxis_range": (500 - idx * 100, 600 - idx * 100),
+                "rlim": (min(values), max(values)),
+            }
+
+            # plot-specific parameters
+            extra_params = {
+                "lineplot": {"linecolor": "#984ea3", "linewidth": 1},
+                "scatterplot": {"facecolor": "#984ea3", "markersize": 5},
+                "barplot": {"facecolor": "#984ea3", "base_value": 0},
+                "fillplot": {"facecolor": "#984ea3", "base_value": 0},
+            }
+
+            # call customized method with plot-specific parameters
+            params = {**base_params, **extra_params.get(plot_type, {})}
+            plot_method(seqid, **params)
 
     # save figure
     print(f"generating plot: {output_file}")
@@ -198,4 +263,10 @@ if __name__ == "__main__":
     fasta_file = sys.argv[1]
     gff_file = sys.argv[2]
     output_file = sys.argv[3] if len(sys.argv) > 3 else "circos_plot.png"
-    create_circos_plot(fasta_file, gff_file, output_file)
+    tsv_file = sys.argv[4] if len(sys.argv) > 4 else None
+    create_circos_plot(fasta_file, gff_file, output_file, tsv_file)
+
+#   fasta_file="data/spyogenes_genome.fna"
+#   gff_file="data/spyogenes_genome.gff"
+#   output_file="output/circos.png"
+#   tsv_file="data/spyogenes_expression_data.tsv"
