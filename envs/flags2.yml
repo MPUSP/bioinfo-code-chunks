@@ -1,0 +1,19 @@
+name: flags2
+channels:
+  - conda-forge
+  - bioconda
+  - etetoolkit
+dependencies:
+  - python=3.6.15
+  - biopython=1.79
+  - hmmer=3.4
+  - mafft=6.861
+  - ete3=3.1.2
+  - ete_toolchain=3.0.0
+  - fasttree=2.1.11
+  - matplotlib=3.3.4
+  - pandas=1.1.5
+  - qt=5.12.9
+  - pyqt=5.12.3
+  - trimal=1.4.1
+  - slr=1.4.3
