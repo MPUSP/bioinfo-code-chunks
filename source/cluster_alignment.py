@@ -84,7 +84,12 @@ if __name__ == "__main__":
         "-i", "--input", required=True, help="Aligned fasta file (MUSCLE output)"
     )
     parser.add_argument(
-        "-o", "--output", required=True, help="Filtered fasta with representatives"
+        "-o",
+        "--output",
+        required=True,
+        help=(
+            "Output prefix for generated files (e.g. filtered FASTA, tree, alignment)"
+        ),
     )
     parser.add_argument(
         "-m",
@@ -112,11 +117,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--tree-output",
         default=True,
+        action=argparse.BooleanOptionalAction,
         help="Write the phylogenetic tree image to svg",
     )
 
     # parse all arguments
-    # testargs: ["-i", "results/blastp/non_spy/results_aligned.fasta", "-o", "results/blastp/non_spy/results_filtered.fasta"]
     args = parser.parse_args()
 
     # read input
@@ -133,7 +138,7 @@ if __name__ == "__main__":
     clusters = cluster_alignment(dm, args)
 
     # get most representative member of a cluster
-    representatives: List = []
+    representatives: List[SeqIO.SeqRecord] = []
     for index, cluster in enumerate(clusters, start=1):
         rep_idx = representative(cluster, dm)
         records[rep_idx].description += f" cluster_size={len(cluster)}"

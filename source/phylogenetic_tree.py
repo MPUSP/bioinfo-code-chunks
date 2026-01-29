@@ -1,29 +1,10 @@
 import argparse
 from Bio import Phylo  # pyright: ignore
 from ete3 import Tree, TreeStyle, NCBITaxa  # pyright: ignore
-from matplotlib import cm, colors  # pyright: ignore
+from matplotlib import colormaps, colors  # pyright: ignore
 from matplotlib import pyplot as plt  # pyright: ignore
 from matplotlib.lines import Line2D  # pyright: ignore
 from typing import Dict
-
-parser = argparse.ArgumentParser(
-    description="Generate a phylogenetic tree visualization."
-)
-parser.add_argument("-i", "--input", help="Input phyloxml file")
-parser.add_argument("-o", "--output", help="Output SVG file")
-parser.add_argument("-s", "--style", default="", help="Tree style options")
-parser.add_argument(
-    "-t",
-    "--type",
-    choices=["cladogram", "phylogram", "unrooted"],
-    help="Display type of tree, default: phylogram (correct scale of evol. distance)",
-)
-parser.add_argument(
-    "-r",
-    "--rank",
-    default="genus",
-    help="NCBI taxonomic rank to color nodes (default: genus)",
-)
 
 
 def build_tree_for_ete3(clade):
@@ -83,6 +64,26 @@ def layout(node, color=None):
 
 if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser(
+        description="Generate a phylogenetic tree visualization."
+    )
+    parser.add_argument("-i", "--input", required=True, help="Input phyloxml file")
+    parser.add_argument("-o", "--output", required=True, help="Output SVG file")
+    parser.add_argument("-s", "--style", default="", help="Tree style options")
+    parser.add_argument(
+        "-t",
+        "--type",
+        choices=["cladogram", "phylogram", "unrooted"],
+        default="phylogram",
+        help="Display type of tree, default: phylogram (correct scale of evol. distance)",
+    )
+    parser.add_argument(
+        "-r",
+        "--rank",
+        default="genus",
+        help="NCBI taxonomic rank to color nodes (default: genus)",
+    )
+
     args = parser.parse_args()
     rank_colors: Dict[str, str] = {}
 
@@ -95,8 +96,10 @@ if __name__ == "__main__":
     # parse str input for styles to dict
     style_kwargs = {}
     if args.style:
-        for item in args.style.split(" "):
-            key, value = item.split("=")
+        for item in args.style.split():
+            if not item or "=" not in item:
+                continue
+            key, value = item.split("=", 1)
             style_kwargs[key] = value
 
     # get NCBI taxon database, downloaded only once
@@ -112,7 +115,7 @@ if __name__ == "__main__":
         unique_ranks = sorted({r for r in ranks if r})
         # generate colors of length ranks using cmap
         if unique_ranks:
-            cmap = cm.get_cmap("Spectral", len(unique_ranks))
+            cmap = colormaps["Spectral"].resampled(len(unique_ranks))
             rank_colors.update(
                 {rank: colors.to_hex(cmap(i)) for i, rank in enumerate(unique_ranks)}
             )

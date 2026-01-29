@@ -11,6 +11,30 @@ parser.add_argument("-u", "--email", required=True, help="Email for NCBI")
 parser.add_argument(
     "-f", "--filter", required=False, help="Entrez query filter", default=None
 )
+parser.add_argument(
+    "--matrix-name",
+    type=str,
+    default="BLOSUM45",
+    help="Substitution matrix when running BLASTP",
+)
+parser.add_argument(
+    "--gapcosts",
+    type=str,
+    default="13 3",
+    help="Gap opening and extension costs formatted as two integers",
+)
+parser.add_argument(
+    "--expect",
+    type=float,
+    default=0.001,
+    help="E-value cutoff for filtering BLAST hits",
+)
+parser.add_argument(
+    "--hitlist-size",
+    type=int,
+    default=1000,
+    help="Maximum number of BLAST hits to return",
+)
 args = parser.parse_args()
 print(f"Started blastp for input: {args.input}")
 
@@ -21,16 +45,16 @@ Blast.email = args.email
 fasta_input = SeqIO.read(args.input, "fasta")
 print(f"Input sequence has length: {len(fasta_input.seq)}")
 
-# perform BLASTP search against the refseq_protein database, excluding genus Streptococcus
+# perform BLASTP search against the refseq_protein database optionally using a filter in Entrez format
 print("Submitting BLASTP request to NCBI...")
 result_stream = Blast.qblast(
     program="blastp",
     database="refseq_protein",
     sequence=str(fasta_input.seq),
-    matrix_name="BLOSUM45",
-    gapcosts="13 3",
-    expect=0.001,
-    hitlist_size=1000,
+    matrix_name=args.matrix_name,
+    gapcosts=args.gapcosts,
+    expect=args.expect,
+    hitlist_size=args.hitlist_size,
     format_type="XML",
     entrez_query=args.filter,
 )
@@ -45,8 +69,8 @@ result_stream.close()
 print(f"BLASTP result saved to: {args.output}/results.xml")
 
 # parse the BLAST result
-result = open(f"{args.output}/results.xml", "rb")
-blast_record = Blast.read(result)
+with open(f"{args.output}/results.xml", "rb") as result:
+    blast_record = Blast.read(result)
 print(f"Total hits found: {len(blast_record)}")
 
 # print the top 3 hits

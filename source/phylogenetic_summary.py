@@ -3,11 +3,6 @@ from Bio import Phylo  # pyright: ignore
 from ete3 import Tree, NCBITaxa  # pyright: ignore
 from typing import Dict
 
-parser = argparse.ArgumentParser(description="Summarize a phylogenetic tree")
-parser.add_argument("-i", "--input", help="Input phyloxml file")
-parser.add_argument("-o", "--output", help="Output SVG file")
-args = parser.parse_args()
-
 
 def build_tree_for_ete3(clade):
     """
@@ -71,6 +66,12 @@ def get_target_taxon(taxid, target_rank, ncbi):
 
 
 if __name__ == "__main__":
+
+    # parse arguments
+    parser = argparse.ArgumentParser(description="Summarize a phylogenetic tree")
+    parser.add_argument("-i", "--input", required=True, help="Input phyloxml file")
+    parser.add_argument("-o", "--output", required=True, help="Output summary tsv file")
+    args = parser.parse_args()
 
     # import phyloxml tree
     tree = Phylo.read(args.input, "phyloxml")
