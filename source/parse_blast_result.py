@@ -1,0 +1,70 @@
+import argparse
+from Bio import Blast  # pyright: ignore[reportMissingImports]
+
+if __name__ == "__main__":
+
+    # get input parameters command line arguments
+    parser = argparse.ArgumentParser(
+        description="prepare flags query from BLASTP results"
+    )
+    parser.add_argument("-i", "--input", required=True, help="Input xml file")
+    parser.add_argument(
+        "-o", "--output", required=True, help="Output fasta file for filtered results"
+    )
+    parser.add_argument(
+        "-m",
+        "--max_hits",
+        required=False,
+        type=int,
+        help="Maximum number of hits to retrieve",
+        default=None,
+    )
+    parser.add_argument(
+        "-f",
+        "--filter",
+        required=False,
+        help="Remove hits whose description does not contain this string",
+        default=None,
+    )
+    args = parser.parse_args()
+    print(f"Prepare FASTA file from input: {args.input}")
+
+    # parse the BLAST result
+    with open(f"{args.input}", "rb") as result:
+        blast_record = Blast.read(result)
+    print(f"Total hits found: {len(blast_record)}")
+
+    # extract seq records
+    filtered_result = {}
+    count = 0
+    for hit in blast_record:
+        for hsp in hit:
+            if args.filter:
+                if args.filter not in hit.target.description:
+                    continue
+            if not hit.target.description.startswith("MULTISPECIES"):
+                filtered_result[hit.target.name] = {
+                    "description": hit.target.description,
+                    "sequence": str(
+                        hsp.target.seq[hsp.coordinates[0][0] : hsp.coordinates[0][1]]
+                    ),
+                    "length": len(hsp.target.seq),
+                    "e_value": hsp.annotations["evalue"],
+                    "identity": hsp.annotations["identity"],
+                    "alignment": hsp,
+                }
+                count += 1
+                break
+        if args.max_hits:
+            if count >= int(args.max_hits):
+                break
+    print(f"Total hits after filtering: {len(filtered_result)}")
+
+    # save the filtered results to fasta file
+    with open(args.output, "w") as out_stream:
+        for k, v in filtered_result.items():
+            out_stream.write(
+                f">{k} {v['description']} length={v['length']} evalue={v['e_value']} identity={v['identity']}\n"
+            )
+            out_stream.write(f"{v['sequence']}\n")
+    print(f"Filtered BLASTP results saved to: {args.output}")
