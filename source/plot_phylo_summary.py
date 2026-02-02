@@ -5,9 +5,18 @@ from matplotlib import pyplot as plt
 
 
 def annotate_stacked_bars(ax, fmt="{:.0f}"):
-    # get total height of plot
+    """
+    Annotate stacked bar chart with values on top of each segment.
+    :param ax: selected axis
+    :param fmt: format string for annotation
+    """
     total_height = max(
-        [rect.get_height() for container in ax.containers for rect in container]
+        [
+            rect.get_height()
+            for container in ax.containers
+            for rect in container
+            if rect.get_height() > 0
+        ]
     )
     for container in ax.containers:
         for rect in container:
@@ -58,3 +67,5 @@ if __name__ == "__main__":
     annotate_stacked_bars(axes[0])
     annotate_stacked_bars(axes[1], fmt="{:.1f}")
     plt.savefig(args.output)
+    plt.close(fig)
+    print(f"Plot saved to: {args.output}")
