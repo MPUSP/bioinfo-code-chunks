@@ -26,6 +26,7 @@ This repository is a collection of reusable, self-contained code chunks and exam
 - [Plot coverage tracks (R)](https://MPUSP.github.io/bioinfo-code-chunks/plot_coverage.nb.html)
 - [Plot Circos genomes with `pycircos` (python)](https://MPUSP.github.io/bioinfo-code-chunks/plot_circos.html)
 - [Homology search for protein sequences (python)](https://MPUSP.github.io/bioinfo-code-chunks/homology_search.html)
+- [ENA fastq data submission (python)](https://MPUSP.github.io/bioinfo-code-chunks/ena_submission.html)
 
 ### Run examples
 
