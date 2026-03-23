@@ -7656,13 +7656,13 @@ mput<span class="w"> </span><span class="nv">$list_md5</span>
 wget<span class="w"> </span>https://github.com/enasequence/webin-cli/releases/download/9.0.3/webin-cli-9.0.3.jar
 </pre></div>
 <ul>
-<li>copy-paste the JSON template from ENA: <a href="https://ena-docs.readthedocs.io/en/latest/submit/reads/webin-cli.html#json-manifest-file-format">https://ena-docs.readthedocs.io/en/latest/submit/reads/webin-cli.html#json-manifest-file-format</a></li>
+<li>take a look at the JSON template from ENA: <a href="https://ena-docs.readthedocs.io/en/latest/submit/reads/webin-cli.html#json-manifest-file-format">https://ena-docs.readthedocs.io/en/latest/submit/reads/webin-cli.html#json-manifest-file-format</a></li>
 <li>it should look similar to this:</li>
 </ul>
 <div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"study"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;must-match-study&gt;"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"sample"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;must-match-sample-submission&gt;"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"study"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;must-match-study-ID&gt;"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"sample"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;must-match-sample-submission-ID&gt;"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;human-readable-sample&gt;"</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"platform"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ILLUMINA"</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"instrument"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Illumina NovaSeq 6000"</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"insert_size"</span><span class="p">:</span><span class="w"> </span><span class="s2">"200"</span><span class="p">,</span>
@@ -7699,7 +7699,6 @@ wget<span class="w"> </span>https://github.com/enasequence/webin-cli/releases/do
 </ul>
 <div class="highlight"><pre><span></span>python<span class="w"> </span>prepare_json.py<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--tsv<span class="w"> </span>experiment.tsv<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--template<span class="w"> </span>template.json<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--raw_prefix<span class="w"> </span>&lt;path-to-raw-data&gt;<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--out_prefix<span class="w"> </span>json
 </pre></div>
