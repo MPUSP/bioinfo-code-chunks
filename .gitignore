@@ -6,3 +6,6 @@
 *.Rproj
 output/*
 *.tar.gz
+# pixi environments
+.pixi/*
+!.pixi/config.toml
