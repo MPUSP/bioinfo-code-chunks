@@ -45,8 +45,8 @@ calculate_gc_content <- function(genome_fasta, window = 100) {
     gc_skew <- (g_content - c_content) / gc_content
     df_gc <- data.frame(
       chr = i,
-      start = seq(0, width(genome_fasta[i]) - window, by = window) * 1e-6,
-      end = seq(window, width(genome_fasta[i]), by = window) * 1e-6,
+      start = seq(0, width(genome_fasta[i]) - window, by = window),
+      end = seq(window, width(genome_fasta[i]), by = window),
       gc = gc_content[seq(1, length(gc_content), by = window)],
       gc_skew = gc_skew[seq(1, length(gc_content), by = window)]
     )
@@ -61,15 +61,15 @@ plot_circlize <- function(genome_fasta, genome_gff, extra = NULL) {
   df_chrom <- data.frame(
     name = names(genome_fasta),
     start = rep(0, length(genome_fasta)),
-    end = width(genome_fasta) * 1e-6
+    end = width(genome_fasta)
   )
 
   # create gene info df
   genes <- genome_gff[genome_gff$type == "gene"]
   df_genes <- tibble(
     chr = as.character(seqnames(genes)),
-    start = start(genes) * 1e-6,
-    end = end(genes) * 1e-6,
+    start = start(genes),
+    end = end(genes),
     strand = (as.numeric(strand(genes)) - 1.5) * -1 # -0.5 for "-" and +0.5 for "+"
   )
 
@@ -80,6 +80,9 @@ plot_circlize <- function(genome_fasta, genome_gff, extra = NULL) {
   df_genes <- validate_genomic_input(df_genes, df_chrom)
   df_gc_content <- validate_genomic_input(df_gc_content, df_chrom)
 
+  # color vector for sectors (chromosomes)
+  sector_colors <- RColorBrewer::brewer.pal(nrow(df_chrom), "Pastel1")
+
   # base track with cromosome information
   circos.clear()
   on.exit(circos.clear(), add = TRUE)
@@ -87,7 +90,7 @@ plot_circlize <- function(genome_fasta, genome_gff, extra = NULL) {
   circos.genomicInitialize(df_chrom)
   circos.track(
     ylim = c(0, 1),
-    bg.col = c("#FF000040", "#00FF0040", "#0000FF40"),
+    bg.col = sector_colors,
     bg.border = NA, track.height = 0.07
   )
 
@@ -95,7 +98,7 @@ plot_circlize <- function(genome_fasta, genome_gff, extra = NULL) {
   circos.genomicTrack(
     df_genes,
     ylim = c(0.5, -0.5),
-    bg.border = c("#FF000040", "#00FF0040", "#0000FF40"),
+    bg.border = sector_colors,
     panel.fun = function(region, value, ...) {
       circos.genomicRect(region, value,
         ytop.column = 1, ybottom = 0,
@@ -110,7 +113,7 @@ plot_circlize <- function(genome_fasta, genome_gff, extra = NULL) {
   circos.genomicTrack(
     dplyr::select(df_gc_content, chr, start, end, gc),
     ylim = c(0.25, 0.75),
-    bg.border = c("#FF000040", "#00FF0040", "#0000FF40"),
+    bg.border = sector_colors,
     panel.fun = function(region, value, ...) {
       circos.genomicLines(region, value, area = TRUE, border = NA)
     }
@@ -120,7 +123,7 @@ plot_circlize <- function(genome_fasta, genome_gff, extra = NULL) {
   circos.genomicTrack(
     dplyr::select(df_gc_content, chr, start, end, gc_skew),
     ylim = c(-0.35, 0.35),
-    bg.border = c("#FF000040", "#00FF0040", "#0000FF40"),
+    bg.border = sector_colors,
     panel.fun = function(region, value, ...) {
       circos.genomicLines(region, replace(value, value > 0, 0), area = TRUE, baseline = 0, border = NA, col = grey(0.8))
       circos.genomicLines(region, replace(value, value < 0, 0), area = TRUE, baseline = 0, border = NA, col = grey(0.6))
@@ -142,18 +145,18 @@ plot_circlize <- function(genome_fasta, genome_gff, extra = NULL) {
       circos.genomicTrack(
         track$data,
         ylim = track$ylim,
-        bg.border = c("#FF000040", "#00FF0040", "#0000FF40"),
+        bg.border = sector_colors,
         track.height = track$height,
         panel.fun = function(region, value, ...) {
-          if (track$type == "lines") {
+          if (track$type == "points") {
+            circos.genomicPoints(region, value, col = track$color, pch = 19, cex = 0.25, ...)
+          } else if (track$type == "lines") {
             circos.genomicLines(region, value, col = track$color, ...)
           } else if (track$type == "rect") {
             circos.genomicRect(region, value,
               ytop.column = 1, ybottom = 0,
               border = NA, col = track$color, ...
             )
-          } else if (track$type == "points") {
-            circos.genomicPoints(region, value, col = track$color, pch = 19, cex = 0.25, ...)
           } else {
             stop("Unsupported track type: ", track$type)
           }

@@ -118,6 +118,17 @@ extra <- list(
     ylim = c(0, 20)
   )
 )
+
+extra[["experiment2"]] <- list(
+  data = data.frame(
+    chr = "NC_002737.2",
+    start = df_genes$start[seq(1, nrow(df_genes), by = 10)],
+    end = df_genes$end[seq(1, nrow(df_genes), by = 10)],
+    value = rep(1, ceiling(nrow(df_genes) / 10))
+  ),
+  type = "rect",
+  color = sample(colors(), ceiling(nrow(df_genes) / 10))
+)
 ```
 
 ### Plot Circos plot and save to disk
