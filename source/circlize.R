@@ -36,19 +36,32 @@ validate_genomic_input <- function(df, chrom_info) {
 }
 
 # function to determine GC content and GC skew in sliding windows across the genome
-calculate_gc_content <- function(genome_fasta, window = 100) {
+calculate_gc_content <- function(genome_fasta, window = 1000) {
   df_gc_content <- data.frame()
   for (i in names(genome_fasta)) {
-    g_content <- letterFrequencyInSlidingView(genome_fasta[[i]], view.width = window, letters = "G") / window
-    c_content <- letterFrequencyInSlidingView(genome_fasta[[i]], view.width = window, letters = "C") / window
+    chr_seq <- genome_fasta[[i]]
+    chr_width <- length(chr_seq)
+    if (chr_width < window) {
+      message(paste0(
+        "Chromosome ", i, " is shorter than window size (",
+        chr_width, " < ", window, "). ",
+        "Skipping GC content calculation for this chromosome."
+      ))
+      next
+    }
+    starts <- seq(1, chr_width - window + 1, by = window)
+    views <- Views(chr_seq, start = starts, width = window)
+    gc_freq <- letterFrequency(views, letters = c("G", "C")) / window
+    g_content <- gc_freq[, "G"]
+    c_content <- gc_freq[, "C"]
     gc_content <- g_content + c_content
-    gc_skew <- (g_content - c_content) / gc_content
+    gc_skew <- ifelse(gc_content == 0, 0, (g_content - c_content) / gc_content)
     df_gc <- data.frame(
       chr = i,
-      start = seq(0, width(genome_fasta[i]) - window, by = window),
-      end = seq(window, width(genome_fasta[i]), by = window),
-      gc = gc_content[seq(1, length(gc_content), by = window)],
-      gc_skew = gc_skew[seq(1, length(gc_content), by = window)]
+      start = (starts - 1),
+      end = (starts + window - 1),
+      gc = gc_content,
+      gc_skew = gc_skew
     )
     df_gc_content <- rbind(df_gc_content, df_gc)
   }
@@ -56,7 +69,7 @@ calculate_gc_content <- function(genome_fasta, window = 100) {
 }
 
 # function to prepare input data
-plot_circlize <- function(genome_fasta, genome_gff, extra = NULL) {
+plot_circlize <- function(genome_fasta, genome_gff, extra = NULL, window = 1000) {
   # create summary df
   df_chrom <- data.frame(
     name = names(genome_fasta),
@@ -74,7 +87,7 @@ plot_circlize <- function(genome_fasta, genome_gff, extra = NULL) {
   )
 
   # calculate GC content
-  df_gc_content <- calculate_gc_content(genome_fasta)
+  df_gc_content <- calculate_gc_content(genome_fasta, window = window)
 
   # final check to validate if genomic coordinates are OK
   df_genes <- validate_genomic_input(df_genes, df_chrom)

@@ -33,11 +33,24 @@ knitr::opts_chunk$set(echo = TRUE)
 install.packages("circlize")
 ```
 
-- or using using conda/mamba, or the pixi environment manager
+- you can also use conda/mamba, or the pixi to install dependencies in a dedicated environment:
 
 ```{bash, eval = FALSE}
 pixi init
-pixi add circlize
+pixi add r-circlize
+...
+```
+
+- to render this notebook automatically with the enclosed pixi env, run:
+
+```{bash, eval = FALSE}
+pixi run test-notebook
+```
+
+- to start an interactive shell with the environment, run:
+
+```{bash, eval = FALSE}
+pixi shell --environment circlize
 ```
 
 - load required libraries
@@ -56,7 +69,7 @@ suppressPackageStartupMessages({
 ### Import utility functions
 
 - `validate_genomic_input` takes as input two data frames, one with genomic coordinates and one with chromosome information, and checks if coordinates correspond
-- `circlize_plot` takes as input two objects, a DNA sequence as `DNAStringSet` and a `GRangesList` with genomic features
+- `plot_circlize` takes as input two objects, a DNA sequence as `DNAStringSet` and a `GRangesList` with genomic features
 - from this data it will automatically plot a circular (genome) map with standard features and tracks
 - additional features or data can be plotted as additional tracks, see examples below
 
@@ -136,7 +149,7 @@ extra[["experiment2"]] <- list(
 - use PNG to not get extremely large figures as can happen with vector graphics like PDF or SVG
 - plotting can take a while as there is a lot of information
 
-```{r, message = FALSE, warning = FALSE, results = FALSE}
+```{r, message = FALSE, warning = FALSE, results = "hide"}
 png("../output/circlize.png", width = 2000, height = 2000, res = 300)
 plot_circlize(fasta, gff, extra = extra)
 dev.off()
