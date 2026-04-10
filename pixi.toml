@@ -17,7 +17,7 @@ bioconductor-genomicranges = ">=1.62.1,<2"
 bioconductor-genomicfeatures = ">=1.62.0,<2"
 
 [feature.circlize.tasks]
-test-notebook = {cmd = "Rscript -e 'rmarkdown::render(\"pipeline/plot_circos.Rmd\")'"}
+test-circlize = {cmd = "Rscript -e 'rmarkdown::render(\"pipeline/plot_circos.Rmd\")'"}
 
 [environments]
 circlize = ["circlize"]
