@@ -78,7 +78,7 @@ plot_circlize <- function(genome_fasta, genome_gff, extra = NULL, window = 1000)
   )
 
   # create gene info df
-  genes <- genome_gff[genome_gff$type == "gene"]
+  genes <- genome_gff[genome_gff$type %in% c("gene", "pseudogene")]
   df_genes <- tibble(
     chr = as.character(seqnames(genes)),
     start = start(genes),
@@ -110,13 +110,13 @@ plot_circlize <- function(genome_fasta, genome_gff, extra = NULL, window = 1000)
   # add gene track
   circos.genomicTrack(
     df_genes,
-    ylim = c(0.5, -0.5),
+    ylim = c(-0.5, 0.5),
     bg.border = sector_colors,
     panel.fun = function(region, value, ...) {
       circos.genomicRect(region, value,
         ytop.column = 1, ybottom = 0,
         border = NA,
-        col = ifelse(value[[1]] > 0, "#c44040", "#3bb03b"), ...
+        col = ifelse(value[[1]] < 0, "#c44040", "#3bb03b"), ...
       )
       circos.lines(CELL_META$cell.xlim, c(0, 0), lty = 2, col = grey(0.5))
     }
@@ -146,6 +146,9 @@ plot_circlize <- function(genome_fasta, genome_gff, extra = NULL, window = 1000)
   # add extra tracks if provided
   if (!is.null(extra)) {
     for (track in extra) {
+      if (!all(c("data", "type") %in% names(track))) {
+        stop("Each extra track must contain 'data' and 'type' fields.")
+      }
       if (!"ylim" %in% names(track)) {
         track$ylim <- c(0, 1)
       }
@@ -161,14 +164,19 @@ plot_circlize <- function(genome_fasta, genome_gff, extra = NULL, window = 1000)
         bg.border = sector_colors,
         track.height = track$height,
         panel.fun = function(region, value, ...) {
+          colors <- track$color
+          if (length(colors) > 1) {
+            current_chr <- CELL_META$sector.index
+            colors <- colors[track$data$chr == current_chr]
+          }
           if (track$type == "points") {
-            circos.genomicPoints(region, value, col = track$color, pch = 19, cex = 0.25, ...)
+            circos.genomicPoints(region, value, col = colors, pch = 19, cex = 0.25, ...)
           } else if (track$type == "lines") {
-            circos.genomicLines(region, value, col = track$color, ...)
+            circos.genomicLines(region, value, col = colors, ...)
           } else if (track$type == "rect") {
             circos.genomicRect(region, value,
               ytop.column = 1, ybottom = 0,
-              border = NA, col = track$color, ...
+              border = NA, col = colors, ...
             )
           } else {
             stop("Unsupported track type: ", track$type)
