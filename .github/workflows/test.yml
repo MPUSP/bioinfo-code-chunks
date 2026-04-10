@@ -12,9 +12,10 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0
         with:
+          # add separate env for each test
+          environments: >-
+            circlize
           cache: true
 
       - name: test-circlize
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pixi run test-circlize
+        run: pixi run -e circlize test-circlize
