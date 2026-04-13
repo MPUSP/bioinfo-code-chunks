@@ -25,6 +25,7 @@ This repository is a collection of reusable, self-contained code chunks and exam
 - [Plot sequence logos with `logomaker` (python)](https://MPUSP.github.io/bioinfo-code-chunks/plot_logos.html)
 - [Plot coverage tracks (R)](https://MPUSP.github.io/bioinfo-code-chunks/plot_coverage.nb.html)
 - [Plot Circos genomes with `pycircos` (python)](https://MPUSP.github.io/bioinfo-code-chunks/plot_circos.html)
+- [Plot Circos genomes with `circlize` (R)](https://MPUSP.github.io/bioinfo-code-chunks/plot_circos.nb.html)
 - [Homology search for protein sequences (python)](https://MPUSP.github.io/bioinfo-code-chunks/homology_search.html)
 - [ENA fastq data submission (python)](https://MPUSP.github.io/bioinfo-code-chunks/ena_submission.html)
 
